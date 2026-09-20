@@ -4,15 +4,51 @@ let intervalId = null;
 let isActive = true;
 let allowlist = ['github.com', 'stackoverflow.com', 'localhost', 'google.com'];
 
+// --- MENU KLIK KANAN (CONTEXT MENU) ---
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "masa-add-whitelist",
+    title: "Tambahkan ke Whitelist (&M)",
+    contexts: ["all"] // Akan muncul saat klik kanan di mana saja (halaman, gambar, header)
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "masa-add-whitelist") {
+    if (!tab || !tab.url) return;
+    try {
+      const url = new URL(tab.url);
+      if (url.protocol.startsWith('http')) {
+        const domain = url.hostname;
+        // Ambil list terbaru dan tambahkan
+        chrome.storage.local.get(['allowlist'], (result) => {
+          let currentList = result.allowlist || allowlist;
+          if (!currentList.includes(domain)) {
+            currentList.push(domain);
+            chrome.storage.local.set({ allowlist: currentList });
+          }
+        });
+      }
+    } catch(e) {}
+  }
+});
+// ----------------------------------------
+
 chrome.storage.local.get(['allowlist', 'wastedTime', 'isActive'], (result) => {
   if (result.allowlist) allowlist = result.allowlist;
   if (result.wastedTime) wastedTime = result.wastedTime;
   if (result.isActive !== undefined) isActive = result.isActive;
 });
 
+// Pantau perubahan Storage (seperti saat domain ditambahkan dari klik kanan)
 chrome.storage.onChanged.addListener((changes) => {
-  if (changes.allowlist) allowlist = changes.allowlist.newValue;
   if (changes.wastedTime) wastedTime = changes.wastedTime.newValue;
+  
+  // Jika allowlist bertambah, langsung evaluasi tab saat ini!
+  if (changes.allowlist) {
+    allowlist = changes.allowlist.newValue;
+    checkActiveTab(); // Memaksa overlay langsung hilang seketika jika web masuk whitelist
+  }
   
   if (changes.isActive) {
     isActive = changes.isActive.newValue;
@@ -35,10 +71,8 @@ function checkActiveTab() {
     return;
   }
   
-  // Deteksi window paling aktif (lebih stabil dari currentWindow saat beralih aplikasi)
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
     if (tabs.length === 0) {
-      // Fallback
       chrome.tabs.query({ active: true, currentWindow: true }, (fallbackTabs) => {
         if (fallbackTabs.length > 0) evaluateTab(fallbackTabs[0]);
         else setDistracted(false);
@@ -57,7 +91,6 @@ function evaluateTab(activeTab) {
   try {
     const url = new URL(activeTab.url);
     const isAllowed = allowlist.some(domain => url.hostname.includes(domain));
-    // Kita berikan tab.id agar setDistracted bisa memaksa update seketika ke tab tersebut
     setDistracted(!isAllowed, activeTab.id);
   } catch (e) {
     setDistracted(false);
@@ -66,8 +99,6 @@ function evaluateTab(activeTab) {
 
 function sendUpdateToTab(tabId) {
   chrome.tabs.sendMessage(tabId, { action: 'updateTime', time: wastedTime }).catch(() => {
-    // JIKA GAGAL: Artinya ini adalah tab lama yang sudah terbuka sebelum ekstensi diinstal.
-    // Kita akan suntikkan file Javascript & CSS secara paksa ke tab lama tersebut.
     chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['content.js']
@@ -76,7 +107,6 @@ function sendUpdateToTab(tabId) {
         target: { tabId: tabId },
         files: ['content.css']
       });
-      // Kirim ulang info waktunya setelah tab lama berhasil dipasangi sistem ekstensi
       setTimeout(() => {
         chrome.tabs.sendMessage(tabId, { action: 'updateTime', time: wastedTime }).catch(() => {});
       }, 100);
@@ -93,30 +123,24 @@ function setDistracted(distracted, tabId = null) {
         chrome.storage.local.set({ wastedTime });
         
         chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs){
-          if(tabs[0]) {
-            sendUpdateToTab(tabs[0].id);
-          }
+          if(tabs[0]) sendUpdateToTab(tabs[0].id);
         });
       }, 1000);
     }
-    
-    // PEMBARUAN: Paksa langsung timer muncul SEKETIKA saat Anda klik tab non-produktif lama.
-    // Tidak perlu menunggu 1 detik putaran timer.
-    if (tabId) {
-      sendUpdateToTab(tabId);
-    }
+    if (tabId) sendUpdateToTab(tabId);
     
   } else {
+    // Mematikan timer dan menyembunyikan overlay
     if (isDistracted) {
       isDistracted = false;
       clearInterval(intervalId);
-      
-      chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs){
-        if(tabs[0]) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: 'hideOverlay' }).catch(() => {});
-        }
-      });
     }
+    // Selalu pastikan tab saat ini menyembunyikan overlay (jika baru saja dimasukkan ke whitelist)
+    chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs){
+      if(tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'hideOverlay' }).catch(() => {});
+      }
+    });
   }
 }
 
