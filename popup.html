@@ -7,14 +7,31 @@
 </head>
 <body>
   <div class="header">
-    <h2>⏳ Masa</h2>
+    <div class="header-top">
+      <h2>⏳ Masa</h2>
+      
+      <!-- Toggle ON/OFF Switch -->
+      <label class="switch" title="Nyalakan/Matikan Ekstensi">
+        <input type="checkbox" id="master-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
     <p>Penjaga Fokus Anda</p>
   </div>
   
   <div class="stats-card">
     <div class="stats-label">Total Waktu Terbuang Hari Ini</div>
     <div id="time-display">0m 0s</div>
-    <button id="reset-btn">🔄 Reset Timer</button>
+    
+    <!-- Inline Reset UI untuk menghindari bug window.confirm -->
+    <div id="reset-section">
+      <button id="reset-btn">🔄 Reset Timer</button>
+      <div id="reset-confirm" class="hidden">
+        <span class="confirm-text">Yakin?</span>
+        <button id="reset-yes">Ya</button>
+        <button id="reset-no">Batal</button>
+      </div>
+    </div>
   </div>
   
   <div class="settings">
@@ -34,4 +51,3 @@
   <script src="popup.js"></script>
 </body>
 </html>
-

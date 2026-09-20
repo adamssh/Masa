@@ -22,20 +22,22 @@ function formatTime(seconds) {
   return `${m}m ${s}s`;
 }
 
-// Mendengarkan update waktu dari background.js setiap detik
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'updateTime') {
     createOverlay();
     overlay.innerText = `⚠️ Waktu Terbuang: ${formatTime(request.time)}`;
+  } else if (request.action === 'hideOverlay') {
+    removeOverlay();
   }
 });
 
-// Pengecekan awal saat halaman dimuat
-chrome.storage.local.get(['allowlist', 'wastedTime'], (result) => {
+chrome.storage.local.get(['allowlist', 'wastedTime', 'isActive'], (result) => {
+  // Jika ekstensi sedang dinonaktifkan, jangan munculkan overlay
+  if (result.isActive === false) return;
+  
   const allowlist = result.allowlist || ['github.com', 'stackoverflow.com', 'localhost', 'google.com'];
   const hostname = window.location.hostname;
   
-  // Jika URL tidak valid, hindari error
   if (!hostname) return;
   
   const isAllowed = allowlist.some(domain => hostname.includes(domain));
@@ -44,4 +46,3 @@ chrome.storage.local.get(['allowlist', 'wastedTime'], (result) => {
     overlay.innerText = `⚠️ Waktu Terbuang: ${formatTime(result.wastedTime || 0)}`;
   }
 });
-

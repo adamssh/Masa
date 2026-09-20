@@ -1,4 +1,5 @@
 let allowlist = [];
+let isActive = true;
 
 function formatTime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -29,17 +30,29 @@ function renderList() {
 }
 
 // Inisialisasi data saat popup dibuka
-chrome.storage.local.get(['allowlist', 'wastedTime'], (result) => {
+chrome.storage.local.get(['allowlist', 'wastedTime', 'isActive'], (result) => {
   allowlist = result.allowlist || ['github.com', 'stackoverflow.com', 'localhost', 'google.com'];
+  
+  if (result.isActive !== undefined) {
+    isActive = result.isActive;
+  }
+  document.getElementById('master-toggle').checked = isActive;
+  
   document.getElementById('time-display').textContent = formatTime(result.wastedTime || 0);
   renderList();
 });
 
-// Update UI secara real-time jika waktu bertambah di background
+// Update UI jika state berubah
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.wastedTime) {
     document.getElementById('time-display').textContent = formatTime(changes.wastedTime.newValue);
   }
+});
+
+// Toggle Master Switch
+document.getElementById('master-toggle').addEventListener('change', (e) => {
+  const isChecked = e.target.checked;
+  chrome.storage.local.set({ isActive: isChecked });
 });
 
 // Tambah domain baru
@@ -47,7 +60,6 @@ document.getElementById('add-btn').onclick = () => {
   const input = document.getElementById('new-domain');
   let domain = input.value.trim().toLowerCase();
   
-  // Bersihkan input (misal user masukin https://github.com/ jadi github.com)
   try {
     if (domain.startsWith('http')) {
       domain = new URL(domain).hostname;
@@ -63,11 +75,27 @@ document.getElementById('add-btn').onclick = () => {
   }
 };
 
-// Reset waktu
-document.getElementById('reset-btn').onclick = () => {
-  if(confirm('Yakin ingin mereset waktu terbuang Anda menjadi 0?')) {
-    chrome.storage.local.set({ wastedTime: 0 });
-  }
+// Reset Waktu - Inline UI (Menghindari bug window.confirm)
+const resetBtn = document.getElementById('reset-btn');
+const confirmUI = document.getElementById('reset-confirm');
+const yesBtn = document.getElementById('reset-yes');
+const noBtn = document.getElementById('reset-no');
+
+resetBtn.onclick = () => {
+  resetBtn.classList.add('hidden');
+  confirmUI.classList.remove('hidden');
+};
+
+yesBtn.onclick = () => {
+  chrome.storage.local.set({ wastedTime: 0 }, () => {
+    confirmUI.classList.add('hidden');
+    resetBtn.classList.remove('hidden');
+  });
+};
+
+noBtn.onclick = () => {
+  confirmUI.classList.add('hidden');
+  resetBtn.classList.remove('hidden');
 };
 
 // Enter key support untuk input
@@ -76,4 +104,3 @@ document.getElementById('new-domain').addEventListener('keypress', function (e) 
       document.getElementById('add-btn').click();
     }
 });
-
