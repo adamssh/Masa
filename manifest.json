@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Masa - Focus Stopwatch",
+  "version": "1.0",
+  "description": "Stopwatch yang menghitung waktu terbuang saat Anda tidak fokus belajar/bekerja.",
+  "permissions": ["storage", "tabs", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Pengaturan Masa"
+  }
+}
+

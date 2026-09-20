@@ -1,0 +1,19 @@
+#masa-focus-overlay {
+  position: fixed !important;
+  bottom: 30px !important;
+  right: 30px !important;
+  background-color: rgba(255, 60, 60, 0.9) !important; /* Warna merah dengan sedikit transparansi */
+  color: #ffffff !important;
+  padding: 15px 25px !important;
+  font-family: 'Courier New', Courier, monospace, sans-serif !important;
+  font-size: 24px !important;
+  font-weight: bold !important;
+  border-radius: 12px !important;
+  z-index: 2147483647 !important; /* Memastikan ada di lapisan paling atas */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
+  pointer-events: none !important; /* Klik akan diteruskan ke halaman di bawahnya (tidak mengganggu navigasi) */
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+  border: 2px solid white !important;
+  backdrop-filter: blur(5px) !important; /* Efek blur di belakangnya */
+}
+

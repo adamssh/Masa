@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Pengaturan Masa</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h2>⏳ Masa</h2>
+    <p>Penjaga Fokus Anda</p>
+  </div>
+  
+  <div class="stats-card">
+    <div class="stats-label">Total Waktu Terbuang Hari Ini</div>
+    <div id="time-display">0m 0s</div>
+    <button id="reset-btn">🔄 Reset Timer</button>
+  </div>
+  
+  <div class="settings">
+    <h3>Daftar Putih (Produkif)</h3>
+    <p class="desc">Domain di bawah ini tidak akan memicu stopwatch.</p>
+    
+    <div class="add-domain-wrapper">
+      <input type="text" id="new-domain" placeholder="Cth: wikipedia.org">
+      <button id="add-btn">Tambah</button>
+    </div>
+    
+    <ul id="allowlist-ul">
+      <!-- Diisi oleh Javascript -->
+    </ul>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+
